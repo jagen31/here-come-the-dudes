@@ -46,6 +46,7 @@ meta:
   // its path.  EPS keeps colours/transparency correct when embedded in a
   // LilyPond score; PNG is for HTML.
   fun render_dancer(e, dir, fmt = "png"):
+    mfile.#{make-directory*}(dir)
     match e
     | 'arm_diagram $l $r':
         def ln = l.unwrap()
