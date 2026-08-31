@@ -6,8 +6,10 @@
 ;; blue) over a body whose shape shows the facing.  Ported from the tonart
 ;; concert's dance-annotation.  `save-dancer!` writes one to a PNG file.
 
-(require 2htdp/image)
-(provide make-dancer save-dancer!)
+(require 2htdp/image racket/class
+         (only-in racket/draw post-script-dc%)
+         (only-in 2htdp/private/image-more render-image))
+(provide make-dancer save-dancer! save-dancer-eps!)
 
 (define (the-pen color) (pen color 8 "solid" "round" "bevel"))
 (define (arm-at hour colour)
@@ -46,3 +48,20 @@
 ;; facing is a string ("towards"/"away"/"left"/"right")
 (define (save-dancer! l r facing path)
   (save-image (make-dancer l r (string->symbol facing)) path))
+
+;; render a dancer to `path` as EPS.  LilyPond's default PostScript
+;; backend fills PNG alpha with white and swaps R/B; EPS via racket/draw's
+;; post-script-dc% keeps the figure transparent and its colours correct.
+(define (save-dancer-eps! l r facing path)
+  (define img (make-dancer l r (string->symbol facing)))
+  (define w (inexact->exact (ceiling (image-width img))))
+  (define h (inexact->exact (ceiling (image-height img))))
+  (define dc (new post-script-dc%
+                  [interactive #f] [width w] [height h]
+                  [output path] [as-eps #t]))
+  (send dc start-doc "danceart-dancer")
+  (send dc start-page)
+  (send dc set-smoothing 'aligned)
+  (render-image img dc 0 0)
+  (send dc end-page)
+  (send dc end-doc))

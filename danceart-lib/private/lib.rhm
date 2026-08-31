@@ -42,16 +42,17 @@ meta:
   fun expr_facing(e):
     def c = context_ref(get_ctxt(e), #'facing)
     if c | to_string(args_of(c)[0].unwrap()) | "towards"
-  // render an arm_diagram to a PNG under `dir`; returns its path
-  fun render_dancer(e, dir):
+  // render an arm_diagram under `dir` as `fmt` ("png" or "eps"); returns
+  // its path.  EPS keeps colours/transparency correct when embedded in a
+  // LilyPond score; PNG is for HTML.
+  fun render_dancer(e, dir, fmt = "png"):
     match e
     | 'arm_diagram $l $r':
         def ln = l.unwrap()
         def rn = r.unwrap()
         def f = expr_facing(e)
-        def name = "arm-" +& to_string(ln) +& "-" +& to_string(rn) +& "-" +& f +& ".png"
-        def path = dir +& "/" +& name
-        #{save-dancer!}(ln, rn, f, path)
+        def path = dir +& "/arm-" +& to_string(ln) +& "-" +& to_string(rn) +& "-" +& f +& "." +& fmt
+        if fmt == "eps" | #{save-dancer-eps!}(ln, rn, f, path) | #{save-dancer!}(ln, rn, f, path)
         path
     | ~else: #false
 
