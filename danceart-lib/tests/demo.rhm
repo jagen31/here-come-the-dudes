@@ -1,0 +1,14 @@
+#lang rhombus/and_meta
+
+// Danceart: a short pose sequence (the "Check Check" hop) rendered as a
+// filmstrip of dancer figures.  Writes PNGs under ./dance-figures/.
+
+import: danceart open
+
+def html = realize dance_html:
+             at [facing towards]:
+               #{--} [1, arm_diagram 7.5 7.5]
+                     [1, arm_diagram 4.5 4.5]
+                     [1, arm_diagram 7.5 4.5]
+                     [1, arm_diagram 4.5 7.5]
+println("dance_html: " +& to_string(html.length()) +& " chars; figures under dance-figures/")

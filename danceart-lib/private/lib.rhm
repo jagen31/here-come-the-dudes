@@ -1,0 +1,79 @@
+#lang rhombus/and_meta
+
+// =====================================================================
+// Danceart -- the dance instantiation of facade (Art 4), in Rhombus.
+//
+// The vocabulary of the tonart concert's "dudes":
+//   arm_diagram left right   an object: a pose, arms at clock positions
+//                            (0..12 o'clock; left arm green, right blue)
+//   facing dir               a coordinate: which way the dancer faces
+//                            (towards / away / left / right)
+//   dance_html               a realizer: render the poses in time order
+//                            as a filmstrip of figures on an HTML page
+//
+// Figures are drawn by `private/dance-draw.rkt` (Racket + 2htdp/image).
+// =====================================================================
+
+import:
+  facade open
+  meta:
+    lib("danceart/private/dance-draw.rkt") open   // save-dancer!, at phase 1
+    lib("racket/file.rkt") as mfile
+
+export:
+  arm_diagram facing
+  dance_html
+  meta: expr_facing render_dancer
+
+// ---------------------------------------------------------------------
+// vocabulary
+// ---------------------------------------------------------------------
+
+define_object arm_diagram    // arm_diagram left-hour right-hour
+
+define_coordinate facing:    // facing towards | away | left | right
+  merge:
+    fun (l, r, _l, _r, _c): (r || l)
+  within:
+    fun (l, r, _l, _r, _c): #true
+
+meta:
+  // the facing of a pose (a string), defaulting to "towards"
+  fun expr_facing(e):
+    def c = context_ref(get_ctxt(e), #'facing)
+    if c | to_string(args_of(c)[0].unwrap()) | "towards"
+  // render an arm_diagram to a PNG under `dir`; returns its path
+  fun render_dancer(e, dir):
+    match e
+    | 'arm_diagram $l $r':
+        def ln = l.unwrap()
+        def rn = r.unwrap()
+        def f = expr_facing(e)
+        def name = "arm-" +& to_string(ln) +& "-" +& to_string(rn) +& "-" +& f +& ".png"
+        def path = dir +& "/" +& name
+        #{save-dancer!}(ln, rn, f, path)
+        path
+    | ~else: #false
+
+// ---------------------------------------------------------------------
+// realizer: the poses, in time order, as a filmstrip
+// ---------------------------------------------------------------------
+
+define_realizer dance_html:
+  fun (ctxt):
+    def dir = "dance-figures"
+    mfile.#{make-directory*}(dir)
+    def poses:
+      context_ref_all(ctxt, #'arm_diagram).sort(fun (a, b): (expr_start(a) || 0) < (expr_start(b) || 0))
+    def figures:
+      for values(acc = "") (p in poses):
+        def path = render_dancer(p, dir)
+        def beat = to_string(expr_start(p) || 0)
+        acc
+          +& "  <figure style=\"margin:0 .3em;text-align:center;\">\n"
+          +& "    <img src=\"" +& path +& "\" height=\"90\" alt=\"pose\">\n"
+          +& "    <figcaption style=\"font:12px sans-serif;color:#666;\">" +& beat +& "</figcaption>\n"
+          +& "  </figure>\n"
+    "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>Dance</title></head>\n"
+      +& "<body>\n<div style=\"display:flex;flex-wrap:wrap;align-items:flex-end;\">\n"
+      +& figures +& "</div>\n</body></html>\n"

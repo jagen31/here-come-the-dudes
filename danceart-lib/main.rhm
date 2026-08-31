@@ -1,0 +1,10 @@
+#lang rhombus/and_meta
+
+// Danceart -- dance figures for facade (Art 4), in Rhombus.  Re-exports
+// facade (the engine + standard coordinates) and the dance library.
+import:
+  facade
+  "private/lib.rhm"
+export:
+  all_from(.facade)
+  all_from(.lib)
